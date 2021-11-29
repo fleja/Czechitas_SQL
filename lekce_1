@@ -1,0 +1,33 @@
+SELECT eventid, iyear, country_txt, region_txt FROM teror;
+
+SELECT DISTINCT country_txt FROM teror;
+
+SELECT DISTINCT iyear FROM teror;
+
+SELECT COUNT (*) FROM teror;
+
+SELECT  eventid as udalost, iyear as rok, country_txt as zeme, region_txt as region FROM teror
+WHERE iyear = 2015;
+
+SELECT * 
+FROM teror;
+
+SELECT *
+FROM teror
+LIMIT 10;
+
+SELECT eventid, iyear, country_txt, region_txt
+FROM teror;
+
+SELECT DISTINCT iyear FROM teror;
+
+SELECT DISTINCT iyear||'-'||imonth||'-'||iday AS datum FROM teror WHERE iyear=2014
+ORDER BY datum DESC;
+
+SELECT COUNT (*)
+FROM teror
+WHERE iyear>2015;
+
+
+
+
