@@ -1,0 +1,1254 @@
+-- teror2, country, attacktype
+
+-- zjistete, kolik utoku bylo v Pakistanu
+select count(eventid), c.name
+from teror2 as t
+left join country as c
+on c.id = t.country
+WHERE c.name = 'Pakistan'
+group by c.name
+;
+
+-- zjistete, kolik utoku bylo v Pakistanu jako Assassination
+
+SELECT * 
+FROM teror2 as t
+left join country as c
+on c.id = t.country
+left join attacktype as a
+on a.id = t.attacktype1
+WHERE c.name = 'Pakistan' and a.name = 'Armed Assault'
+;
+
+
+
+
+-- zjistete jmena vsech zemi, kde se stal unos letadla (Hijacking) - staci jen attacktype1;
+;
+SELECT DISTINCT c.name
+FROM country as c
+left join teror2 as t 
+on c.id = t.country
+left join attacktype as a
+on a.id = t.attacktype1
+WHERE a.name = 'Hijacking'
+;
+
+
+-- jaky utok se nejvice vyskytuje jako attacktype1, 2 a 3?
+
+SELECT
+count(eventid) as pocet_utoku, a.name
+FROM teror2 as t
+LEFT JOIN attacktype as a
+ON a.id = t.attacktype1
+GROUP BY a.name
+ORDER BY pocet_utoku DESC
+;
+
+-- vyselektujte tabulku, kde budou jen ty udalosti, kde jsou vyplnene vsechny tri typy utoku. Null hodnoty odeberte na zaklade joinu
+
+SELECT *
+FROM teror2 as t
+inner JOIN attacktype as a
+ON a.id = t.attacktype3;
+
+--jmeno zeme, kde bylo v roce 2016 nejvic Assassination (attacktype1)
+
+SELECT COUNT(eventid) as pocet_utoku, c.name
+FROM teror2 as t
+    LEFT JOIN attacktype as a
+ON a.id = t.attacktype1
+    LEFT JOIN country as c
+ON c.id = t.country
+WHERE t.iyear = '2016' AND a.name ='Assassination'
+GROUP by c.name
+ORDER BY pocet_utoku DESC
+LIMIT 1;
+
+
+-- pocet utoku s attacktype1 = 'Assassination' a attacktype2 = 'Armed Assault' (edited) 
+
+SELECT COUNT(t.eventid)
+, COUNT(t.attacktype1)
+, COUNT(t.attacktype2)
+FROM teror2 as t
+    LEFT JOIN attacktype as a
+ON a.id = t.attacktype1
+    LEFT JOIN attacktype as b
+ON b.id= t.attacktype2
+WHERE a.name = 'Assassination' AND b.name = 'Armed Assault';
+
+-- jmena vsechn zemi, ktere mely celkove vice utoku nez 1 000
+
+SELECT c.name
+, COUNT(eventid) as pocet_utoku
+FROM teror2 as t
+    LEFT JOIN country as c
+    ON c.id = t.country
+    GROUP BY c.name
+WHERE pocet_utoku > 1000
+
+    ;
+
+
+
+
+create function TO_CZK_TEST(currency varchar(3), amount float)
+  returns float
+  as
+  $$
+     CASE 
+        when currency = 'USD' THEN amount * 22.233
+        when currency = 'EUR' THEN amount * 25.287    
+        else null
+     END
+  $$
+;
+
+SELECT TO_CZK('USD', 10);
+
+create function TO_POUNDS_TEST(kilos float)
+  returns float
+  as
+  $$
+    kilos * 2.20462
+  $$
+;
+
+SELECT 
+    release_year
+    , type
+    , count(*) 
+    , (SELECT count(*) FROM "NETFLIX-MOVIES" AS nm WHERE source.release_year = nm.release_year )
+FROM 
+    "NETFLIX-MOVIES" AS source
+WHERE 
+    release_year > 2010
+GROUP BY 1,2
+ORDER BY 1,2
+;   
+
+WITH "count_years" as 
+        (
+            SELECT 
+                RELEASE_YEAR
+                , COUNT(*) pocet
+            FROM "NETFLIX-MOVIES"
+            GROUP BY 1
+         )
+SELECT 
+    RELEASE_YEAR
+    , sum(pocet) over(ORDER BY RELEASE_YEAR RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW )
+FROM "count_years"
+ORDER BY 1
+
+
+-------------------------
+--    vlastní funkce   --
+-------------------------
+
+-- dobrý pro zjednodušení některých operací
+
+-- CREATE FUNCTION NAME(ATRIBUT1 data_type, ATRIBUT2 data_type2 ... )
+--        RETURNS data_type_vystupu
+--        $$
+--            kod, co se ma stat se vstupem
+--        $$
+--    ; 
+
+-- převod kilogramů na libry 
+
+-- 1Kg = 2.20462 libry
+
+  
+
+-- fork -- různé chování pro různé hodnoty na vstupu
+
+
+
+
+-- funkce může vrátit i tabulku
+-- Často pouštím nějaký SELECT, například pro reporting 
+
+-- funkce, který vyhledá filmy v roce X s ratingem Y  
+
+--                 KORELOVANÁ QUERY                  --
+-------------------------------------------------------
+
+-- Korelovaná query je něco co se hodí, když ke svým výsledkům potřebujete přidat nějakou (většinou agregovanou)
+-- hodnotu, na základě podmínky, která se vztahuje k aktuálnímu řádku výsledků.
+
+-- Zní to strašně složitě, ale ve skutečnosti je to jen taková svobodnější window funkce
+
+
+-- Takže nějdřív zkusíme malé procvičení window funkcí:
+
+
+-- Budeme pracovat s tabulkou "NETFLIX-MOVIES"
+
+--------------------------------------------------------
+
+-- řekněme, že chci spočítat kolik titulů vyšlo v jednotlivých letech  
+-- a ještě to chci rozdělit podle toho, jestli to byl film, nebo seriál
+
+
+  
+-- vezmem to jen po roce 2010  
+  
+
+  
+-- a teď bych chtěl přidat kolik filmů vyšlo v daném roce  
+  
+
+
+  
+-- jde to udělat i pomoci CTE a je to trochu čistější  
+  
+
+
+-- kolik filmů vyšlo do roku XY
+-- to znamená, že pro každý rok chci udělat sumu všech předchozích a aktuálního
+
+
+
+-- nojo, ale s filtrem ve WHERE nebo HAVING to počítá sumy, jen za roky, co mám zobrazené já chci zobrazit jen roky 2011+ ,ale započítat chci i ty roky předtím.
+-- takže musím použít QUALIFY
+
+
+
+--------------------------------------------------------------------------------------------------------------------------------- 
+
+-- A teď pomocí korelované query
+ 
+
+
+ 
+-- korelovaná query k danému řádku vybere jen ty řádky, které splňují vazební podmínku
+-- takže můžu podmínku zesložitit
+ 
+  
+-- vlastně to funguje podobně jako lateral  
+  
+ 
+ 
+-- klouzavé průměry  
+
+-- Pro každý rok spočtětě kolik filmů během něj vyšlo a kolik během 5 let před ním
+
+
+-- Přes napojení tabilky na sebe
+
+
+-- přes korelovanou query - velmi podobné
+
+  
+
+-- anti join 
+-- Všechny filmy, které vyšly v roce, kdy nevyšel ani jeden Rkový film
+
+-- Přes CTE
+-- nejdřív Subselect, roky kdy nevyšel Rkový film
+
+
+
+-- jako korelovaná query 
+
+
+-----------------------------------------------------------------------------------
+
+
+--use database courses;
+--use schema sch_czechita;
+--co tam mame?
+select * from snowflake_sample_data.weather.weather_14_total limit 10;
+
+--data o pocasi
+select count(1)
+from snowflake_sample_data.weather.daily_16_total;
+
+--predpovedi
+select count(1)
+from snowflake_sample_data.weather.weather_14_total;
+
+--unikatni mesta cca 190k
+select count(1), count(distinct v:city.name)
+from snowflake_sample_data.weather.daily_16_total;
+
+--unikatni mesta
+select count(1), count(distinct v:city.name)
+from snowflake_sample_data.weather.weather_14_total;
+
+
+--pojdme si udelat mensi tabulky
+create table courses.sch_czechita.w14 as
+select * from snowflake_sample_data.weather.weather_14_total
+where v:city.name = 'New York'
+and   v:city.country = 'US';
+
+create table courses.sch_czechita.d16 as
+select * from snowflake_sample_data.weather.daily_16_total
+where v:city.name = 'New York'
+and   v:city.country = 'US';
+
+
+--a jak to dostaneme ven nejak citelne?
+select v:main.temp_max temp_max_far,
+       v:main.temp_min temp_min_far,
+       cast(v:time as timestamp) time,
+       v:city.coord.lat lat,
+       v:city.coord.lon lon,
+       v:city.name
+from courses.sch_czechita.w14
+limit 10;
+
+--co s tim jde delat? ... vsechno
+select (v:main.temp_max - 273.15) * 1.8000 + 32.00 as temp_max_farenheit,
+       (v:main.temp_min - 273.15) * 1.8000 + 32.00 as temp_min_farenheit,
+       cast(v:time as timestamp) time,
+       v:city.coord.lat lat,
+       v:city.coord.lon lon,
+       v
+from courses.sch_czechita.w14
+where v:city.name = 'New York'
+and   v:city.country = 'US'
+order by time desc
+limit 10;
+
+
+--pojdme trochu hard core smerem k LATERAL FLATTEN rozhozeni pole do radku, ale postupne ;)
+--kolik mame radek z mesta Cervesina? cca 18k
+select count(1)
+from courses.sch_czechita.d16 ow
+where v:city.name = 'New York'
+and   v:city.country = 'US'
+limit 10;
+
+
+
+
+
+-- s nasi malou tabulkou uz jsme na rychlosti, na jakou jsme zvykli
+--pojdme trochu hard core smerem k LATERAL FLATTEN rozhozeni pole do radku, ale postupne ;)
+--kolik mame radek z mesta Cervesina? cca 18k
+select count(1)
+from courses.sch_czechita.d16 ow
+where v:city.name = 'New York'
+and   v:city.country = 'US'
+limit 10;
+
+--pohled na data
+select
+       v:main.temp_max temp_max_far,
+       v:main.temp_min temp_min_far,
+       cast(v:time as timestamp) time,
+       v:city.coord.lat lat,
+       v:city.coord.lon lon,
+       v
+from courses.sch_czechita.d16 ow
+where v:city.name = 'New York'
+and   v:city.country = 'US';
+
+--pohled na data
+select
+       v:main.temp_max temp_max_far,
+       v:main.temp_min temp_min_far,
+       cast(v:time as timestamp) time,
+       v:city.coord.lat lat,
+       v:city.coord.lon lon,
+       v
+from courses.sch_czechita.w14 ow
+where v:city.name = 'New York'
+and   v:city.country = 'US';
+
+
+
+--pojdme trochu hard core: LATERAL FLATTEN rozhodi pole do radku 
+select  ow.v:time::datetime         as prediction_dt,
+        ow.v:city.name              as city,
+        ow.v:city.country           as country,
+        cast(f.value:dt as timestamp) as forecast_dt,
+        f.value:temp.max              as forecast_max_k,
+        f.value:temp.min              as forecast_min_k,
+        ow.v:data                     as data,
+        f.value                       as forecast
+ from courses.sch_czechita.d16 ow, lateral flatten(input => v, path => 'data') f
+ limit 10;
+ 
+-- co se to ted stalo??
+
+
+
+
+--total peklo, pojdme dal
+with
+forecast as
+(select ow.v:time         as prediction_dt,
+        ow.v:city.name    as city,
+        ow.v:city.country as country,
+        cast(f.value:dt   as timestamp) as forecast_dt,
+        f.value:temp.max  as forecast_max_k,
+        f.value:temp.min  as forecast_min_k,
+        f.value           as forecast
+ from courses.sch_czechita.d16 ow, lateral flatten(input => v, path => 'data') f),
+
+actual as
+(select v:main.temp_max as temp_max_k,
+        v:main.temp_min as temp_min_k,
+        cast(v:time as timestamp)     as time_dt,
+        v:city.name     as city,
+        v:city.country  as country
+ from courses.sch_czechita.w14)
+
+select cast(forecast.prediction_dt as timestamp) prediction_dt,
+       actual.time_dt,
+       forecast.forecast_dt,
+       forecast.forecast_max_k,
+       forecast.forecast_min_k,
+       actual.temp_max_k,
+       actual.temp_min_k
+from actual
+left join forecast on actual.city = forecast.city and
+                      actual.country = forecast.country and
+                      date_trunc(day, actual.time_dt) = date_trunc(day, forecast.forecast_dt)
+--tady by to slo groupovat po dnech a v nich dela prumerne teploty z tech mereni a tisic dalsich kouzel
+order by forecast_dt desc, prediction_dt desc;
+
+
+ 
+ 
+ 
+-------------------------------------------------------------------------------------------
+----- CLONE
+-------------------------------------------------------------------------------------------
+
+-- CLONE TABLE, clonovat se daji i schemata, databaze a dalsi radosti - to si ukazovat nebudeme (beztak na to jen tak mit prava nebudete :D )
+-- CLONE vytvori samostatnou kopii - zmeny v puvodni tabulce neovlivni zmeny v klonovane tabulce
+
+DESC TABLE dummy_data;
+
+CREATE TABLE DUMMY_DATA_CLONE CLONE DUMMY_DATA;
+
+DESC TABLE DUMMY_DATA_CLONE;
+
+-- VERSUS
+CREATE TABLE dummy_data_copy AS
+SELECT * FROM dummy_data;
+-- rozdil je ve vecech, ktere tolik nevidime - jak snowflake naklada se storage, jaka metadata se kopiruji
+
+DESC TABLE dummy_data_copy;
+
+
+
+
+
+-------------------------------------------------------------------------------------------
+----- CREATE VIEW / MATERIALIZED VIEW
+-------------------------------------------------------------------------------------------
+
+CREATE VIEW v_teror_gname_agg AS
+SELECT 
+    gname
+    , COUNT(*) AS utoky
+FROM teror
+GROUP BY gname;
+
+SELECT * 
+FROM v_teror_gname_agg
+ORDER BY utoky DESC;
+
+SHOW VIEWS;
+
+DROP VIEW v_teror_gname_agg;
+
+
+--- view je zavisle na datech zdrojove tabulky - prestane fungovat, kdyz puvodni tabulku zmenime
+
+CREATE OR REPLACE TABLE dummy_data_copy2 AS
+SELECT * FROM dummy_data;
+
+
+create or replace view a as 
+select * from dummy_data_copy2;
+
+create or replace view b as 
+select customer_id, product_id from dummy_data_copy2;
+
+select * from a;
+select * from b;
+alter table dummy_data_copy2 drop column product_id;
+
+select * from a;
+select * from b;
+
+
+------------ priprava dat
+create or replace table vartab2 (n number(2), v variant);
+
+insert into vartab2
+    select column1 as n, parse_json(column2) as v
+    from values (1, 'null'), 
+                (2, null), 
+                (3, 'true'),
+                (4, '-17'), 
+                (5, '123.12'), 
+                (6, '1.912e2'),
+                (7, '"Om ara pa ca na dhih"  '), 
+                (8, '[-1, 12, 289, 2188, false,]'), 
+                (9, '{ "x" : "abc", "y" : false, "z": 10} ') 
+       as vals;
+-------------
+
+-- tabulka s jsonama z minule hodiny - priklad
+SELECT * FROM vartab2;
+
+-- !! nazev view musi byt unikatni - jinak error object exists
+CREATE VIEW vartab2 AS
+SELECT * FROM vartab2;
+
+-- vytvortime view s unikatnim nazvem jako select *
+CREATE VIEW v_vartab2 AS
+SELECT * FROM vartab2;
+
+CREATE OR REPLACE VIEW v_vartab2 AS
+SELECT * FROM vartab2;
+
+-- na existujici views se muzeme podivat
+SHOW VIEWS;
+
+-- s view nakladame jako s tabulkou
+SELECT * FROM v_vartab2 ORDER BY n desc;
+
+-- zmenime pocet sloupcu v puvodni tabulce
+ALTER TABLE vartab2 DROP COLUMN v;
+
+-- error - column mismatch
+SELECT * FROM v_vartab2;
+
+-- dropneme puvodni tabulku
+DROP TABLE vartab2;
+
+-- error - object does not exist
+SELECT * FROM v_vartab2;
+
+-- drop view
+DROP VIEW v_vartab2;
+
+-- 1. Nejdříve spojte IMDB_TITLES & IMDB_RATINGS (INNER JOIN) pomocí id (IMDB_TITLES.TCONST = IMDB_RATINGS.TCONST) do pomocné dočasné tabulky (CREATE TEMPORARY TABLE).
+
+CREATE OR REPLACE TEMPORARY TABLE SPOJENI_IMDB_01 AS
+SELECT
+    IT.*
+//    , IR.TCONST AS TCONST2
+    , IR.AVERAGERATING
+    , IR.NUMVOTES
+//    , CASE ...
+FROM IMDB_TITLES AS IT
+INNER JOIN IMDB_RATINGS AS IR
+ON IT.TCONST = IR.TCONST;
+
+
+
+-- 2. Pro napojení na Netflix potřebujeme vytvořit nový sloupeček, který upraví hodnoty ze sloupce TITLETYPE tak, abychom hodnoty mohly napojit na sloupeček TYPE z NETFLIX_TITLES.
+    --> Vytvořte v další pomocné tabulce (CREATE TEMPORARY TABLE) nový sloupeček TITLETYPE_NEW pomocí CASE WHEN.
+    --> V novém sloupečku bude hodnota 'Movie' pro hodnoty TITLETYPE 'movie', 'short', 'tvMovie', 'tvShort' a hodnota 'TV Show' pro hodnoty TITLETYPE 'tvSeries', 'tvMiniSeries'.
+
+SELECT DISTINCT TITLETYPE FROM IMDB_TITLES;
+SELECT DISTINCT TYPE FROM NETFLIX_TITLES;
+
+CREATE TEMP TABLE SPOJENI_IMDB_02 AS
+SELECT 
+    *,
+    CASE
+        WHEN TITLETYPE IN ('movie', 'short', 'tvMovie', 'tvShort') THEN 'Movie'
+        WHEN TITLETYPE IN ('tvSeries', 'tvMiniSeries') THEN 'TV Show'
+    END AS TITLETYPE_NEW
+FROM SPOJENI_IMDB_01;
+
+
+
+-- 3. Pomocnou tabulku s napojenými IMDB datasety a sloupečkem TITLETYPE a napojte pomocí INNER JOIN na NETFLIX_TITLES pomocí názvu, roku vydání a typu titulu a uložte do finální tabulky NETFLIX_IMDB (CREATE TABLE) 
+    --> Nezapomeňte na nastavení svého schématu, abyste mohly vytvářet tabulky.
+    --> Zachovejte všechny sloupce z IMDB_TITLES, pouze sloupce AVERAGERATING a NUMVOTES z tabulky IMDB_RATINGS a všechny sloupce z tabulky NETFLIX_TITLES
+    --   (IMDB_TITLES.PRIMARYTITLE = NETFLIX_TITLES.TITLE 
+    --   AND IMDB_TITLES.STARTYEAR = NETFLIX_TITLES.RELEASE_YEAR
+    --   AND IMDB_TITLES.TITLETYPE_NEW = NETFLIX_TITLES.TYPE)
+
+CREATE TEMP TABLE SPOJENI_IMDB_NETFLIX AS
+SELECT *
+FROM SPOJENI_IMDB_02 AS I
+INNER JOIN NETFLIX_TITLES AS N
+ON I.PRIMARYTITLE = N.TITLE
+AND I.STARTYEAR = N.RELEASE_YEAR
+AND I.TITLETYPE_NEW = N.TYPE
+;
+
+
+-- 4. Kolik je ve výsledku duplicit? (GROUP BY & HAVING). (Duplicity posuzujte tak, ze se neopakuje SHOW_ID (id Netflix datasetu)). Úkolem není duplicity smazat! Pouze napište dotaz, který vás k duplicitám dovede a napište, kolik jich tam vidíte.
+
+SELECT 
+    SHOW_ID
+    , COUNT(*)
+FROM SPOJENI_IMDB_NETFLIX
+GROUP BY SHOW_ID
+HAVING COUNT(*) > 1;
+
+CREATE TABLE SPOJENI_IMDB_NETFLIX_CTE AS
+WITH
+SPOJENI_IMDB AS 
+  (SELECT
+      IT.*
+      , IR.AVERAGERATING
+      , IR.NUMVOTES
+      , CASE
+          WHEN TITLETYPE IN ('movie', 'short', 'tvMovie', 'tvShort') THEN 'Movie'
+          WHEN TITLETYPE IN ('tvSeries', 'tvMiniSeries') THEN 'TV Show'
+        END AS TITLETYPE_NEW
+  FROM IMDB_TITLES AS IT
+  INNER JOIN IMDB_RATINGS AS IR
+  ON IT.TCONST = IR.TCONST)
+SELECT * 
+FROM SPOJENI_IMDB AS I
+INNER JOIN NETFLIX_TITLES AS N
+ON I.PRIMARYTITLE = N.TITLE
+AND I.STARTYEAR = N.RELEASE_YEAR
+AND I.TITLETYPE_NEW = N.TYPE
+;
+
+CREATE TABLE SPOJENI_IMDB_NETFLIX_CTE AS
+WITH
+SPOJENI_IMDB AS 
+  (SELECT
+      IT.*
+      , IR.AVERAGERATING
+      , IR.NUMVOTES
+      , CASE
+          WHEN TITLETYPE IN ('movie', 'short', 'tvMovie', 'tvShort') THEN 'Movie'
+          WHEN TITLETYPE IN ('tvSeries', 'tvMiniSeries') THEN 'TV Show'
+        END AS TITLETYPE_NEW
+  FROM IMDB_TITLES AS IT
+  INNER JOIN IMDB_RATINGS AS IR
+  ON IT.TCONST = IR.TCONST)
+SELECT * 
+FROM SPOJENI_IMDB AS I
+INNER JOIN NETFLIX_TITLES AS N
+ON I.PRIMARYTITLE = N.TITLE
+AND I.STARTYEAR = N.RELEASE_YEAR
+AND I.TITLETYPE_NEW = N.TYPE
+;
+
+SELECT
+    *
+FROM
+(SELECT 
+    COUNT(*) OVER (PARTITION BY SHOW_ID) AS WINDOW
+    , *
+FROM SPOJENI_IMDB_NETFLIX
+ORDER BY PRIMARYTITLE)
+WHERE WINDOW > 1;
+
+SELECT 
+    COUNT(*) OVER (PARTITION BY SHOW_ID) AS WINDOW
+    , *
+FROM SPOJENI_IMDB_NETFLIX
+QUALIFY WINDOW > 1
+ORDER BY PRIMARYTITLE;
+
+SELECT
+    REGION_TXT
+    , BT.CITY
+    , SUM(NKILL)
+FROM BABY_TEROR_CLEAN AS BT
+LEFT JOIN REGIONY_ZEME_MESTO AS R
+ON BT.COUNTRY_TXT = R.COUNTRY_TXT
+AND BT.CITY = R.CITY
+LEFT JOIN AMBASADY AS A
+ON BT.COUNTRY_TXT = A.COUNTRY_TXT
+AND BT.CITY = A.CITY
+WHERE A.CITY IS NOT NULL
+  AND REGION_TXT IN ('South Asia', 'Middle East & North Africa')
+GROUP BY REGION_TXT, BT.CITY
+HAVING SUM(NKILL) > 20
+ORDER BY SUM(NKILL) DESC
+LIMIT 1
+;
+
+SELECT *
+FROM BABY_TEROR_CLEAN AS BT
+LEFT JOIN REGIONY_ZEME_MESTO AS R
+ON BT.COUNTRY_TXT = R.COUNTRY_TXT
+AND BT.CITY = R.CITY
+LEFT JOIN AMBASADY AS A
+ON BT.COUNTRY_TXT = A.COUNTRY_TXT
+AND BT.CITY = A.CITY
+
+SELECT
+//    IFF(B1.EVENTID IS NOT NULL,B1.EVENTID,B2.EVENTID) AS SPOLECNY_EVENTID 
+    COALESCE(B1.EVENTID, B2.EVENTID) AS EVENTID
+    , COALESCE(B1.EVENT_DATE,B2.EVENT_DATE) AS EVENT_DATE
+    , COALESCE(B1.GNAME,B2.GNAME) AS GNAME
+    , COALESCE(B1.COUNTRY_TXT,B2.COUNTRY_TXT) AS COUNTRY_TXT
+    , COALESCE(B1.CITY,B2.CITY) AS CITY
+    , B1.NKILL
+    , B2.NKILLTER
+FROM BABY_TEROR_NKILL AS B1
+FULL OUTER JOIN BABY_TEROR_NKILLTER AS B2
+ON B1.EVENTID = B2.EVENTID
+;
+-- jak se naopak podivat na to, jake byly utoky jinde nez v danych mestech 
+    -- LEFT JOIN (na teror) & WHERE 
+
+SELECT *
+FROM BABY_TEROR_CLEAN AS BT
+LEFT JOIN AMBASADY AS A
+ON BT.COUNTRY_TXT = A.COUNTRY_TXT
+AND BT.CITY = A.CITY
+WHERE A.CITY IS NULL
+;
+
+--  JOINS
+SELECT * FROM BABY_TEROR_CLEAN LIMIT 100;
+----------------------------
+------- AMBASADY
+----------------------------
+-- Mame seznam mest, kde jsou ambasady a chceme se podivat, jake zde probehlo utoku
+SELECT * FROM AMBASADY;
+-- koukame pouze do BABY_TEROR_CLEAN
+    -- co maji spolecneho?
+-- jak si profiltrovat tabulku seznamem ambasad
+    -- INNER JOIN
+    -- LEFT JOIN (na ambasady)
+-- jak se naopak podivat na to, jake byly utoky jinde nez v danych mestech 
+    -- LEFT JOIN (na teror) & WHERE 
+------------------------------------------------
+------- SPOJENI 2 PRIBUZNYCH DATASETU VEDLE SEBE
+------------------------------------------------
+-- v jedne tabulce mame informaci o nkill
+SELECT
+    *
+FROM BABY_TEROR_NKILL;
+-- v druhe tabulce  mame informaci o nkillter
+SELECT
+    *
+FROM BABY_TEROR_NKILLTER;
+--> nejake utoky maji spolecne, nejake ne, je potreba to spojit dohromady
+    -- FULL OUTER JOIN & IFF / COALESCE
+------------------------------------------------
+------- REGIONY
+------------------------------------------------
+SELECT * 
+FROM REGIONY_ZEME_MESTO;
+-- zgroupovat si podle gname, pouze region 'South Asia' a 'Middle East & North Africa'
+SELECT * 
+FROM BABY_TEROR_CLEAN
+LIMIT 100;
+-- GROUP BY CHECK LIST: 
+    --1.  CHCI AGREGOVAT -> spocitat radky, vypocitat maximalni hodnotu sloupce, sumu sloupce atd
+    --2.  CHCI VYTVORIT SKUPINY -> vysledek agregace se vztahuje k jednotlivym kategoriim (napr. pocet utoku jednotlivych organizaci, pocet zabitych v jednotlivych zemich atp.)
+    -->3.  vse, co neni obalene v agregaci (napr.: count(*), max(iyear), sum(nkill)) MUSI byt v GROUP BY
+    -->4.  vysledek je tabulka s novou strukturou (danou skupinami)
+-- ukol
+/* --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+-- UKOL 1
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Máte k dispozici dva nové datasety: NETFLIX_TITLES a IMDB_TITLES (jsou uložené ve schématu SCH_CZECHITA v našem Snowflake workspace). Jak názvy napovídají, jedná se o datasety filmů a seriálů. 
+Dataset NETFLIX_TITLES ukazuje, jaké filmy a seriály měl Netflix k dispozici v den stažení. Dataset IMDB_TITLES ukazuje, jaké filmy a další tituly byly v databázi IMDB v den stažení (tento dataset není kompletní, aby byl menší).
+Zodpovězte otázky v jednotlivých úkolech - odpovězte slovně a přidejte kód, kterým jste na odpověď přišly.
+Jakmile budete mít úkoly vypracované, okopírujte váš skript do Google Docs a link na něj odevzdejte do úkolu jako hyperlink. Vkládejte jen relevantní části řešení.
+Jak by to mělo vypadat? Například pokud se ptám, jaké jsou dva nejčastější roky vydání filmů na Netflixu, do závorek vám k tomu napíšu, o jaké sloupečky se jedná - v tomto případě je to RELEASE_YEAR. 
+Někdy i jaká hodnota je třeba filtrovat - TYPE = 'Movie', případně jakou metodu máte použít - v tomto případě je to GROUP BY. Odevzdané řešení by vypadalo takto:
+-- SLOVNÍ ODPOVĚĎ: 2017, 2018
+-- KÓD:
+SELECT 
+    RELEASE_YEAR
+    , COUNT(*) AS POCET_TITULU
+FROM NETFLIX_TITLES
+WHERE TYPE = 'Movie'
+GROUP BY RELEASE_YEAR
+ORDER BY POCET_TITULU DESC;
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+*/
+;
+-- Podívejte se, jak vypadá dataset NETFLIX_TITLES
+SELECT 
+    *
+FROM NETFLIX_TITLES
+LIMIT 100;
+-- Podívejte se, jak vypadá dataset IMDB_TITLES
+SELECT 
+    *
+FROM IMDB_TITLES
+LIMIT 100;
+-- Vypracujte úkoly:
+-- Úkoly:
+-- 1. Jaké dominují typy titulů na IMDB (TITLETYPE)? (Použij GROUP BY.) Vyber 3 nejčastější typy titulu (Použij LIMIT).
+-- SLOVNÍ ODPOVĚĎ:
+-- KÓD:
+-- 2. V jakém roce bylo na Netflix přidáno (DATE_ADDED - Rok jsou poslední 4 znaky - použij funkci RIGHT().) nejvíce filmů (TYPE = 'Movie')? (Použij GROUP BY.) Zapište také, kolik filmů bylo v daném roce přidáno. (Pouze filmů ne seriálů.)
+-- SLOVNÍ ODPOVĚĎ:
+-- KÓD:
+-- 3. Kolik zemí (COUNTRY) má na Netflixu alespoň 100 seriálů (TYPE = 'TV Show')? (Ber v potaz pouze první uvedenou zemi - použij funkci SPLIT_PART()). Země musí být vyplněna (COUNTRY <> ''). Ve výsledku zobraz jen ty země, které vyhovují zadání (použij HAVING).
+-- SLOVNÍ ODPOVĚĎ:
+-- KÓD:
+/* --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+-- UKOL 2
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+V druhém úkolu opět pracujeme s tabulkami NETFLIX_TITLES a IMDB_TITLES, navíc budeme pracovat ještě s tabulkou IMDB_RATINGS, kde jsou uložené hodnocení k titulům IMDB.
+Jsou to následující tabulky:
+SELECT * FROM SCH_CZECHITA.NETFLIX_TITLES;
+SELECT * FROM SCH_CZECHITA.IMDB_TITLES;
+SELECT * FROM SCH_CZECHITA.IMDB_RATINGS;
+Vašim úkolem je spojit všechny tři tabulky pomoci INNER JOIN (chceme jen ty tituly, které mají všechny tři datasety společné).
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+*/
+-- 1. Nejdříve spojte IMDB_TITLES & IMDB_RATINGS (INNER JOIN) pomocí id (IMDB_TITLES.TCONST = IMDB_RATINGS.TCONST) do pomocné dočasné tabulky (CREATE TEMPORARY TABLE).
+-- 2. Pro napojení na Netflix potřebujeme vytvořit nový sloupeček, který upraví hodnoty ze sloupce TITLETYPE tak, abychom hodnoty mohly napojit na sloupeček TYPE z NETFLIX_TITLES.
+    --> Vytvořte v další pomocné tabulce (CREATE TEMPORARY TABLE) nový sloupeček TITLETYPE_NEW pomocí CASE WHEN.
+    --> V novém sloupečku bude hodnota 'Movie' pro hodnoty TITLETYPE 'movie', 'short', 'tvMovie', 'tvShort' a hodnota 'TV Show' pro hodnoty TITLETYPE 'tvSeries', 'tvMiniSeries'.
+-- 3. Pomocnou tabulku s napojenými IMDB datasety a sloupečkem TITLETYPE a napojte pomocí INNER JOIN na NETFLIX_TITLES pomocí názvu, roku vydání a typu titulu a uložte do finální tabulky NETFLIX_IMDB (CREATE TABLE) 
+    --> Nezapomeňte na nastavení svého schématu, abyste mohly vytvářet tabulky.
+    --> Zachovejte všechny sloupce z IMDB_TITLES, pouze sloupce AVERAGERATING a NUMVOTES z tabulky IMDB_RATINGS a všechny sloupce z tabulky NETFLIX_TITLES
+    --   (IMDB_TITLES.PRIMARYTITLE = NETFLIX_TITLES.TITLE 
+    --   AND IMDB_TITLES.STARTYEAR = NETFLIX_TITLES.RELEASE_YEAR
+    --   AND IMDB_TITLES.TITLETYPE_NEW = NETFLIX_TITLES.TYPE)
+-- 4. Kolik je ve výsledku duplicit? (GROUP BY & HAVING). (Duplicity posuzujte tak, ze se neopakuje SHOW_ID (id Netflix datasetu)). Úkolem není duplicity smazat! Pouze napište dotaz, který vás k duplicitám dovede a napište, kolik jich tam vidíte.
+-- pomoci window funkce
+--+ JAK SE ZBAVIT DUPLICIT
+--+ ukol jako CTE / vnorene query
+
+SELECT
+//    ROW_NUMBER() OVER (ORDER BY NULL)
+//    , DATEADD(DAY,-1,CURRENT_DATE())
+    DATEADD(DAY,
+            ROW_NUMBER() OVER (ORDER BY NULL),
+            DATEADD(DAY,-1,CURRENT_DATE()))
+FROM TABLE(GENERATOR(ROWCOUNT => 20));
+
+SELECT
+    ATTACKTYPE1_TXT
+    , 'Czech Republic' AS COUNTRY_TXT
+    , CZECH_REPUBLIC AS POCET_UTOKU
+FROM cust_pivot
+UNION ALL
+SELECT
+    ATTACKTYPE1_TXT
+    , 'Austria' AS COUNTRY_TXT
+    , AUSTRIA AS POCET_UTOKU
+FROM cust_pivot
+UNION ALL
+SELECT
+    ATTACKTYPE1_TXT
+    , 'Slovakia' AS COUNTRY_TXT
+    , Slovakia AS POCET_UTOKU
+FROM cust_pivot
+UNION ALL
+SELECT
+    ATTACKTYPE1_TXT
+    , 'Germany' AS COUNTRY_TXT
+    , Germany AS POCET_UTOKU
+FROM cust_pivot
+;
+
+CREATE OR REPLACE TEMP TABLE cust_pivot AS
+SELECT
+    ATTACKTYPE1_TXT
+    , IFNULL(CZECH_REPUBLIC,0) AS CZECH_REPUBLIC
+    , IFNULL(Slovakia,0) AS Slovakia
+    , IFNULL(Austria,0) AS Austria
+    , IFNULL(Germany,0) AS Germany
+FROM ( -- v tabulce musi byt pouze ty sloupce, ktere chceme ukazovat ve vysledku
+  SELECT
+      COUNTRY_TXT
+      , ATTACKTYPE1_TXT
+      , COUNT(*) AS POCET_UTOKU
+  FROM TEROR
+  WHERE COUNTRY_TXT IN ('Czech Republic', 'Slovakia', 'Austria', 'Germany')
+  GROUP BY COUNTRY_TXT, ATTACKTYPE1_TXT
+  )
+    PIVOT (sum(POCET_UTOKU)
+           FOR country_txt IN ('Czech Republic', 'Slovakia', 'Austria', 'Germany')) as p -- je potreba vyjmenovat vsechny unikatni hodnoty
+           (ATTACKTYPE1_TXT, Czech_republic, Slovakia, Austria, Germany) -- je potreba vyjmenovat vsechny nazvy sloupcu, nepouzivat dvojite uvozovky
+ORDER BY ATTACKTYPE1_TXT
+;
+
+CREATE OR REPLACE TEMP TABLE cust_pivot AS
+SELECT
+    *
+FROM ( -- v tabulce musi byt pouze ty sloupce, ktere chceme ukazovat ve vysledku
+  SELECT
+      COUNTRY_TXT
+      , ATTACKTYPE1_TXT
+      , COUNT(*) AS POCET_UTOKU
+  FROM TEROR
+  WHERE COUNTRY_TXT IN ('Czech Republic', 'Slovakia', 'Austria', 'Germany')
+  GROUP BY COUNTRY_TXT, ATTACKTYPE1_TXT
+  )
+    PIVOT (sum(POCET_UTOKU)
+           FOR country_txt IN ('Czech Republic', 'Slovakia', 'Austria', 'Germany')) as p -- je potreba vyjmenovat vsechny unikatni hodnoty
+           (ATTACKTYPE1_TXT, Czech_republic, Slovakia, Austria, Germany) -- je potreba vyjmenovat vsechny nazvy sloupcu, nepouzivat dvojite uvozovky
+ORDER BY ATTACKTYPE1_TXT
+;
+
+-- A/ uz zname zpusob -- COUNT + CASE WHEN
+SELECT
+    ATTACKTYPE1_TXT
+    , COUNT(DISTINCT CASE WHEN COUNTRY_TXT = 'Austria' THEN EVENTID END) AS AUSTRIA_UTOKY
+    , COUNT(DISTINCT CASE WHEN COUNTRY_TXT = 'Germany' THEN EVENTID END) AS Germany_UTOKY
+    , COUNT(DISTINCT CASE WHEN COUNTRY_TXT = 'Slovakia' THEN EVENTID END) AS Slovakia_UTOKY
+    , COUNT(DISTINCT CASE WHEN COUNTRY_TXT = 'Czech Republic' THEN EVENTID END) AS CZECH_REPUBLIC_UTOKY
+FROM TEROR
+WHERE COUNTRY_TXT IN ('Czech Republic', 'Slovakia', 'Austria', 'Germany')
+GROUP BY ATTACKTYPE1_TXT;
+SELECT
+    COUNTRY_TXT
+    , ATTACKTYPE1_TXT
+    , COUNT(*) AS POCET_UTOKU
+FROM TEROR
+WHERE COUNTRY_TXT IN ('Czech Republic', 'Slovakia', 'Austria', 'Germany')
+GROUP BY COUNTRY_TXT, ATTACKTYPE1_TXT
+ORDER BY COUNTRY_TXT, ATTACKTYPE1_TXT;
+SET lower_bound = 10;
+SET upper_bound = 100;
+
+SHOW VARIABLES;
+
+SELECT
+    *
+FROM BABY_TEROR
+WHERE NKILL BETWEEN $LOWER_BOUND AND $UPPER_BOUND;
+
+UNSET LOWER_BOUND;
+UNSET UPPER_BOUND;
+
+-- 1. ZOBRAZTE SI POUZE DUPLICITY POMOCI COUNT(*)
+-- Kouknete se na jednotlive duplicity - v cem se lisi?
+
+SELECT *
+FROM NETFLIX_IMDB_TITLES_DUPLICITY_UKOL
+ORDER BY SHOW_ID;
+
+
+SELECT *
+FROM NETFLIX_IMDB_TITLES_DUPLICITY_UKOL
+QUALIFY COUNT(*) OVER (PARTITION BY SHOW_ID) > 1
+ORDER BY SHOW_ID;
+
+
+-- 2. OCISLUJTE RADKY PODLE SHOW_ID (pro kazde SHOW_ID zacne cislovat od 1) 
+-- SERADTE PODLE JEDNOHO Z NASLEDUJICICH SLOUPECKU (VYBERTE SI KTERY - JEDEN): AVERAGERATING, NUMVOTES, RUNTIMEMINUTES
+
+SELECT
+    ROW_NUMBER() OVER (PARTITION BY SHOW_ID ORDER BY NUMVOTES DESC NULLS LAST) AS RN
+    , *
+FROM NETFLIX_IMDB_TITLES_DUPLICITY_UKOL
+QUALIFY ROW_NUMBER() OVER (PARTITION BY SHOW_ID ORDER BY NUMVOTES DESC NULLS LAST) = 1
+ORDER BY SHOW_ID;
+
+
+-- 3. VYTVORTE NOVOU TABULKU K SOBE DO SCHEMATU JAKO NETFLIX_UKOL_DUPLICITY (CREATE TABLE VASE_SCHEMA.NETFLIX_UKOL_DUPLICITY AS SELECT ...) 
+-- JIZ BEZ DUPLICIT, pomocne sloupecky nevypisujte, ponechte pouze ty puvodni
+
+CREATE TABLE NETFLIX_UKOL_DUPLICITY AS
+SELECT
+    *
+FROM NETFLIX_IMDB_TITLES_DUPLICITY_UKOL
+QUALIFY ROW_NUMBER() OVER (PARTITION BY SHOW_ID ORDER BY NUMVOTES DESC NULLS LAST) = 1;
+
+------------------------------------------------------------
+
+---------------------------------------------------------------------------------
+---- DALSI PRIKLADY S WINDOW FUNKCEMI
+---------------------------------------------------------------------------------
+----------------------------
+-- WINDOW FUNKCE & DUPLICITY
+----------------------------
+-- Nova tabulka: BABY_TEROR
+---------------------------
+-- mensi mnozstvi sloupcu, vetsi mnozstvi radku, ovsem duplicitnich
+SELECT 
+    *
+FROM BABY_TEROR;
+-- O-OU 56402 radek
+----------------------------------
+-- DUPLICITY - KONTROLA (GROUP BY)
+----------------------------------
+-- kde ty duplicity jsou - pomoci GROUP BY a HAVING (duplicita je v EVENTID)
+----------------------------
+-- DUPLICITY - WINDOW FUNKCE
+----------------------------
+-- chci videt nezmenene radky --> zachovat strukturu tabulky (radky zustanou nezmenene)
+-- PODIVAT SE DO DAT
+-- data seradime pomoci EVENTID
+-- DEFINOVAT DUPLICITY
+----------------------
+-- spocitame si, kolik radku nalezi kazdemu eventid (stejne jako pomoci GROUP BY, ale bez zmeny ve strukture tabulky --> window funkce)
+-- seradime podle EVENTID
+-- FILTROVAT NADEFINOVANE DUPLICITY
+-----------------------------------
+--> rovnou filtrujeme jen ty, pro ktere je pocet vyssi nez 1
+-- Ted ale jak se tech duplicit zbavit?
+-- OCISLOVANI RADEK
+-------------------
+--> ocislujeme si radky v ramci okna danem EVENTID - chceme pouze jeden radek pro jedno EVENTID
+-- nejdriv se podivame pouze na duplicity, dosadime cislo radku (seradime podle HROZNE_DULEZITY_CISLO pozor na NULL hodnoty)
+-- OCISLOVANI RADEK - DUPLICITY (KONTROLA)
+-- OCISLOVANI RADEK - CELA TABULKA (KONTROLA)
+-- jak to vypada pro zbytek tabulky --> dame pryc filtr na duplicity
+-- NOVA TABULKA BEZ DUPLICIT
+----------------------------
+-- jakmile to mame zkontrolovane, je potreba vytvorit novou tabulku, ve ktere duplicity budou odstranene
+-- chceme jen radky, ktere row_number oznacil jako 1, nemusime si vypisovat row_number, staci uvest v qualify
+-- UKOLY ----------------------------------------------------------
+--> Zkuste si nadefinovat a vytvorit tabulku bez duplicit na prikladu tabulky NETFLIX_IMDB_TITLES_DUPLICITY_UKOL. Je v ni jen par radku, aby to bylo snazsi se v duplicitach zorientovat, ale ne vsechny radky maji duplicitu.
+SELECT * 
+FROM NETFLIX_IMDB_TITLES_DUPLICITY_UKOL;
+-- 1. ZOBRAZTE SI POUZE DUPLICITY POMOCI COUNT(*)
+-- Kouknete se na jednotlive duplicity - v cem se lisi?
+-- 2. OCISLUJTE RADKY PODLE SHOW_ID (pro kazde SHOW_ID zacne cislovat od 1) 
+-- SERADTE PODLE JEDNOHO Z NASLEDUJICICH SLOUPECKU (VYBERTE SI KTERY - JEDEN): AVERAGERATING, NUMVOTES, RUNTIMEMINUTES
+-- 3. VYTVORTE NOVOU TABULKU K SOBE DO SCHEMATU JAKO NETFLIX_UKOL_DUPLICITY (CREATE TABLE VASE_SCHEMA.NETFLIX_UKOL_DUPLICITY AS SELECT ...) 
+-- JIZ BEZ DUPLICIT, pomocne sloupecky nevypisujte, ponechte pouze ty puvodni
+------------------------------------------------------------
+---------------------------
+------- LAG
+---------------------------
+-- predchazejici hodnota
+-- LAG(CO_MA_DOSADIT) OVER (PARTITION BY OKNO_SLOUPEC ORDER BY PORADI_SLOUPEC)
+-- NETFLIX_UKOL_DUPLICITY
+-------------------------
+SELECT
+    *
+FROM NETFLIX_UKOL_DUPLICITY;
+-- AVERAGERATING-PREDCHOZI_RATING AS ROZDIL_OPROTI_PREDCHOZIMU
+-- STARTYEAR-PREDCHOZI_STARTYEAR AS UBEHLYCH_LET
+-- BABY_TEROR
+-------------
+SELECT 
+    * 
+FROM BABY_TEROR
+LIMIT 1000;
+-- BABY_TEROR - MESTO (CITY) PREDCHOZIHO UTOKU (DEFAULT: 'PRVNI UTOK')
+-- partition: country_txt
+-- order: eventid
+------ ukooooooooooooooooooooooooooooooooooool
+-- UKOLY ----------------------------------------------------------
+--> 1. Dosadte predchozi datum (lag) utoku pro utoky v Ceske republice (PREDCHOZI_DATUM) a vypocitejte rozdil od predchoziho utoku ve dnech (ROZDIL_VE_DNECH) (pouzijte funkci DATEDIFF).
+-- dopiste window funkci do nasledujici query:
+SELECT 
+    *
+FROM BABY_TEROR
+WHERE COUNTRY_TXT = 'Czech Republic'
+ORDER BY EVENT_DATE
+;
+------------------------------------------------------------
+-------------------------------------------------------------------------------------------
+----- SESSION VARIABLE
+-------------------------------------------------------------------------------------------
+--- cislo
+SET my_number = 5;
+-- pouziti v prikazu -> $
+SELECT $my_number;
+SELECT DATEADD(DAY,$my_number,CURRENT_DATE());
+-- datum
+SET my_date = '2021-01-01'::DATE;
+SELECT $my_date;
+-- vic variables v jednom prikazu
+SET (var1, var2, var3) = (10, 20, 30);
+-- variables jednoduse i prepiseme
+SET (my_number, my_date) = (7, '2021-06-01'::DATE);
+SHOW VARIABLES;
+-- variables mizi po ukonceni session (=zavreni snowflake okna), ale muzeme je i unsetnout
+UNSET my_number;
+UNSET my_date;
+-- pripadne vice jednim prikazem
+UNSET (var1, var2, var3);
+-- muzeme ulozit i hodnotu pomoci funkce
+SET vcera = DATEADD(day,-1,CURRENT_DATE());
+SELECT $vcera;
+-- pro nektere vyrazy to ale nefunguje
+SET dni_od_vanoc2020 = DATEDIFF(day,'2020-12-24',CURRENT_DATE());
+--> je potreba vyraz dat do subquery
+SET dni_od_vanoc2020 = (SELECT DATEDIFF(day,'2020-12-24',CURRENT_DATE()));
+SELECT $dni_od_vanoc2020;
+UNSET(vcera, dni_od_vanoc2020);
+-- pouziti?
+-- hodi se predevsim, pokud tuto hodnotu pouzijeme v ruznych queries -> v pripade, ze chceme parametry zmenit, staci v promenne
+------------------------------------------
+-- ### UKOL
+------------------------------------------
+-- Vydefinujte si promenne lower_bound = 10 a upper_bound = 100. Napiste query, ktera vypise ty utoky, kde bylo zabito od 10 do 100 obeti (vcetne) - vyuzijte nove nadefinovane promenne. Po query promenne unsetnete.
+------------------------------------------
+-------------------------------------------------------------------------------------------
+----- PIVOT/UNPIVOT
+-------------------------------------------------------------------------------------------
+-- co uz zname - group by
+-- teror utoky ze sousednich zemi
+SELECT
+    *
+FROM TEROR
+WHERE COUNTRY_TXT IN ('Czech Republic', 'Slovakia', 'Austria', 'Germany')
+ORDER BY COUNTRY_TXT, ATTACKTYPE1_TXT;
+-- chceme zjistit, kolik je utoku pro danou zemi --> GROUP BY COUNTRY_TXT, ATTACKTYPE1_TXT
+-- chceme mit v KAZDEM sloupecku pocet pro JEDNOTLIVE ZEME
+-- A/ uz zname zpusob -- COUNT + CASE WHEN
+-- B/ jina moznost -- PIVOT
+CREATE OR REPLACE TEMP TABLE cust_pivot AS
+SELECT
+    *
+FROM ( -- v tabulce musi byt pouze ty sloupce, ktere chceme ukazovat ve vysledku
+  
+  ---- NASE SUB-QUERY
+  
+  )
+    PIVOT (sum(utoky)
+           FOR country_txt IN ('Czech Republic', 'Slovakia', 'Austria', 'Germany')) as p -- je potreba vyjmenovat vsechny unikatni hodnoty
+           
+           (ATTACKTYPE1_TXT, Czech_republic, Slovakia, Austria, Germany) -- je potreba vyjmenovat vsechny nazvy sloupcu, nepouzivat dvojite uvozovky
+ORDER BY ATTACKTYPE1_TXT
+;
+--------- zpet na long table --> vytvorit table cust_pivot
+-- A/ UNPIVOT - pouze do jiz agregovane podoby --> z WIDE na LONG
+SELECT * 
+FROM cust_pivot
+    UNPIVOT (UTOKY 
+             FOR COUNTRY_TXT IN (Czech_republic, Slovakia, Austria, Germany));
+-- B/ UNION ALL
+-------------------------------------------------------------------------------------------
+----- UNIFORM, GENERATOR
+-------------------------------------------------------------------------------------------
+----------------- 
+-- UNIFORM(min,max,generator)
+-- random cislo z uniformni distribuce = kazde cislo ma stejnou pravdepodobnost vyberu
+SELECT 
+    UNIFORM(50,100,RANDOM()) --> vzdy random cislo
+    ,UNIFORM(1, 10, 1)  --> vzdy konstantni cislo
+;
+-- pouziti v tabulce
+SELECT
+    *
+    ,UNIFORM(50,100,RANDOM())
+FROM DUMMY_DATA;
+-- RANDSTR(length,generator)
+SELECT RANDSTR(9,RANDOM());
+-- GENERATOR jako table function (=naplneni tabulky)
+-- ROWCOUNT VS TIMELIMIT
+SELECT 
+    1 
+FROM 
+TABLE(generator(rowcount => 10));
+SELECT 
+    1 
+FROM 
+TABLE(generator(timelimit => 0.1));
+SELECT 
+    UNIFORM(50,100,RANDOM()) 
+FROM TABLE(GENERATOR(ROWCOUNT => 50));
+SELECT 
+    ROW_NUMBER() OVER (ORDER BY NULL) 
+FROM TABLE(GENERATOR(ROWCOUNT => 50));
+-- pouziti generatoru ke generovani datumu
+-- ROW_NUMBER (1->10)
+-- DATUM, KE KTEREMU BUDEME PRICITAT - 1 (PRVNI DATUM BUDE +1 Z ROW_NUMBER) (POZOR DATOVY TYP DATE!!)
+-- PRIPOCITAT ROW_NUMBER K DATU
+-- da se to napsat i cele do jednoho sloupecku
+------------------------------------------
+-- ### UKOL
+------------------------------------------
+-- Vygenerujte si data od '2016-01-01' do '2016-12-31', tentokrat pomoci session variables.
+-- Definujte si variable period_start a period_end, 
+-- Pomoci techto variables si definujte dalsi variable num_days (=pocet dni v roce), kterou spocitate pomoci (select datediff()) (pozor, k datediff je potreba pricist jednicku, aby se vam vygenerovaly vsechny data)
+-- Promenne pouzijte v generatoru pro datum.
+-- BONUS:
+-- Na vytvorena data najoinujte (left join) tabulku teror.
+-- Pomoci case when spocitejte, kolik v kazdem dnu v roce 2016 bylo utoku v zemi 'Pakistan' a kolik v zemi 'Afghanistan' - kazda zeme bude mit jeden sloupecek
+-- vysledek pak bude ukazovat pocet utoku po dnech - tam, kde zadny nebyl bude 0.
+------------------------------------------
+-- nove UI
+
+---- RANK()
+-----------
+-- vyzaduje ORDER BY
+-- poradi - napr. kdyz vyhodnocujeme nejakou soutez podle poctu ziskanych bodu apod.
+-- narozdil od ROW_NUMBER() v pripade shody v hodnote, ktera je v ORDER BY priradi stejne cislo (stejny rank = stejne poradi)
+
+-- Vybere seřazené organizace podle počtu obětí sestupně a přiřadí jim pořadí (rank)
+-- kombinace group by a window fce
+SELECT
+    GNAME
+    , SUM(NKILL) AS POCET_OBETI
+    , RANK() OVER (ORDER BY SUM(NKILL) DESC NULLS LAST) AS RANK_POCET_OBETI
+FROM TEROR
+GROUP BY GNAME
+ORDER BY SUM(NKILL) DESC NULLS LAST;
+
+
+-- chceme poradi segmentovat podle roku --> pridame PARTITION BY
+--> GROUP BY GNAME, IYEAR
+--> filtrovat pouze prvni 3 kazdy rok
+SELECT
+    IYEAR
+    , GNAME
+    , SUM(NKILL) AS POCET_OBETI
+    , RANK() OVER (PARTITION BY IYEAR ORDER BY SUM(NKILL) DESC NULLS LAST) AS RANK_POCET_OBETI
+FROM TEROR
+GROUP BY IYEAR, GNAME
+QUALIFY RANK_POCET_OBETI <= 3
+ORDER BY IYEAR, SUM(NKILL) DESC NULLS LAST;
+
+-- UKOLY ----------------------------------------------------------
+
+--> 1. Spočítejte, kolik jednotlivé teroristické skupiny (GNAME) měli na svědomí obětí (NKILL) - pojmenujte sloupeček POCET_OBETI (pomocí GROUP BY). 
+    -- Seřaďte podle počtu obětí (NULL hodnoty budou na konci).
+
+--> 2. Do stejného příkazu spočítejte celkový počet (= za celý dataset) zabitých obětí (NKILL) - vypočítejte z výsledku agregace, ne z původního sloupečku (pomocí WINDOW funkce). 
+    -- Přidejte také podíl zabitých (POCET_OBETI / POCET_OBETI_CELKEM) - pojmenujte jako PROCENTO_OBETI.
+
+--> 3. Ve stejném příkazu filtrujte pouze organizace, které se na celkovém počtu obětí podílelo alespoň 10 procenty (PROCENTO_OBETI >= 0.1).
+
+SELECT
+    GNAME
+    , SUM(NKILL) AS POCET_OBETI
+    , SUM(SUM(NKILL)) OVER () AS POCET_OBETI_CELKEM
+    , POCET_OBETI/POCET_OBETI_CELKEM AS PROCENTO_OBETI
+FROM TEROR
+GROUP BY GNAME
+QUALIFY PROCENTO_OBETI >= 0.1
+ORDER BY POCET_OBETI DESC NULLS LAST;
+
+SELECT
+    IYEAR
+    , COUNT(*) AS POCET_UTOKU
+    , SUM(COUNT(*)) OVER () AS POCET_UTOKU_CELKEM
+    , COUNT(*)/SUM(COUNT(*)) OVER () AS PROCENTO_UTOKU
+    , RATIO_TO_REPORT(COUNT(*)) OVER () AS PROCENTO_UTOKU_RYCHLEJI
+FROM TEROR
+GROUP BY IYEAR;
+
+SELECT
+    IYEAR
+    , COUNT(*) AS POCET_UTOKU
+    , SUM(COUNT(*)) OVER () AS POCET_UTOKU_CELKEM
+    , COUNT(*)/SUM(COUNT(*)) OVER () AS PROCENTO_UTOKU
+    , RATIO_TO_REPORT(COUNT(*)) OVER () AS PROCENTO_UTOKU_RYCHLEJI
+FROM TEROR
+GROUP BY IYEAR
+QUALIFY PROCENTO_UTOKU_RYCHLEJI >= 0.2;
+
+SELECT
+    SUM(NKILL) OVER (PARTITION BY IYEAR ORDER BY DATE_FROM_PARTS(IYEAR, IMONTH, IDAY)) AS POCET_OBETI_KUMULATIVNE
+    , NKILL
+    , EVENTID
+    , IYEAR
+FROM TEROR
+QUALIFY SUM(NKILL) OVER (PARTITION BY IYEAR ORDER BY DATE_FROM_PARTS(IYEAR, IMONTH, IDAY)) <= 200
+ORDER BY IYEAR, DATE_FROM_PARTS(IYEAR, IMONTH, IDAY);
+-- QUALIFY je nadstavba, neni to SQL standard, poradime si bez QUALIFY?
+SELECT
+    *
+FROM
+  (SELECT
+      COUNT(*) OVER (PARTITION BY IYEAR) AS pocet_utoku_celkem_dany_rok
+      , *
+  FROM TEROR
+  ORDER BY IYEAR, EVENTID)
+WHERE pocet_utoku_celkem_dany_rok >= 14000;
