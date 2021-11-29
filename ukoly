@@ -1,0 +1,185 @@
+V druhém úkolu opět pracujeme s tabulkami NETFLIX_TITLES a IMDB_TITLES, navíc budeme pracovat ještě s tabulkou IMDB_RATINGS, kde jsou uložené hodnocení k titulům IMDB.
+
+Jsou to následující tabulky:
+
+SELECT * FROM SCH_CZECHITA.NETFLIX_TITLES;
+SELECT * FROM SCH_CZECHITA.IMDB_TITLES;
+SELECT * FROM SCH_CZECHITA.IMDB_RATINGS;
+
+--Vašim úkolem je spojit všechny tři tabulky pomoci INNER JOIN (chceme jen ty tituly, které mají všechny tři datasety společné).
+
+
+---1. Nejdříve spojte IMDB_TITLES & IMDB_RATINGS (INNER JOIN) pomocí id (IMDB_TITLES.TCONST = IMDB_RATINGS.TCONST) do pomocné dočasné tabulky (CREATE TEMPORARY TABLE).
+
+CREATE TEMPORARY TABLE SCH_CZECHITA_HLAVACKOVAZ.NETFLIX AS
+SELECT *
+FROM SCH_CZECHITA.NETFLIX_TITLES;
+
+CREATE TEMPORARY TABLE SCH_CZECHITA_HLAVACKOVAZ.IMDB AS
+SELECT * FROM SCH_CZECHITA.IMDB_TITLES;
+
+CREATE TEMPORARY TABLE SCH_CZECHITA_HLAVACKOVAZ.RATINGS AS
+SELECT * FROM SCH_CZECHITA.IMDB_RATINGS;
+
+CREATE TEMPORARY TABLE IMDB_JOIN AS
+SELECT RATINGS.tconst
+, RATINGS.averagerating
+, RATINGS.numvotes
+, titletype
+, primarytitle
+, originaltitle
+, startyear
+, endyear
+, runtimeminutes
+, genres
+FROM imdb
+INNER JOIN ratings
+ON IMDB.tconst = ratings.tconst;
+
+
+DROP TABLE sch_czechita_hlavackovaz.IMDB_JOIN;
+
+--DROP TABLE sch_czechita_hlavackovaz.IMDB_JOIN_A;
+
+
+SELECT * FROM IMDB_JOIN;
+
+
+
+--2. Pro napojení na Netflix potřebujeme vytvořit nový sloupeček, který upraví hodnoty ze sloupce TITLETYPE tak, abychom hodnoty mohly 
+--napojit na sloupeček TYPE z NETFLIX_TITLES.
+    --> Vytvořte v další pomocné tabulce (CREATE TEMPORARY TABLE) nový sloupeček TITLETYPE_NEW pomocí CASE WHEN.
+    --> V novém sloupečku bude hodnota 'Movie' pro hodnoty TITLETYPE 'movie', 'short', 'tvMovie', 'tvShort' a hodnota 'TV Show' 
+    --pro hodnoty TITLETYPE 'tvSeries', 'tvMiniSeries'.
+    
+ALTER TABLE IMDB_JOIN 
+ADD TITLETYPE_NEW VARCHAR AS
+CASE
+     WHEN titletype = 'movie' THEN 'Movie'
+        WHEN titletype = 'short' THEN 'Movie'
+        WHEN titletype = 'tvMovie' THEN 'Movie'
+        WHEN titletype = 'tvShort' THEN 'Movie'
+        WHEN titletype = 'tvSeries' THEN 'TV Show'
+        WHEN titletype = 'tvMiniSeries' THEN 'TV Show'
+        ELSE Null
+      END 
+ 
+;
+
+SELECT COUNT(TITLETYPE_NEW) FROM IMDB_JOIN
+WHERE TITLETYPE_NEW IS NOT NULL;
+
+SELECT * FROM IMDB_JOIN;
+ 
+    
+--3. Pomocnou tabulku s napojenými IMDB datasety a sloupečkem TITLETYPE a napojte na NETFLIX_TITLES pomocí názvu, roku vydání a typu titulu a uložte do finální tabulky NETFLIX_IMDB (CREATE TABLE) 
+    --> Nezapomeňte na nastavení svého schématu, abyste mohly vytvářet tabulky.
+    --> Zachovejte všechny sloupce z IMDB_TITLES, pouze sloupce AVERAGERATING a NUMVOTES z tabulky IMDB_RATINGS a všechny sloupce z tabulky NETFLIX_TITLES
+       -- (IMDB_TITLES.PRIMARYTITLE = NETFLIX_TITLES.TITLE 
+        --AND IMDB_TITLES.STARTYEAR = NETFLIX_TITLES.RELEASE_YEAR
+        --AND IMDB_TITLES.TITLETYPE_NEW = NETFLIX_TITLES.TYPE)
+  ;      
+        
+CREATE TEMPORARY TABLE NETFLIX_IMDB AS
+SELECT I.*
+, N.*
+
+FROM IMDB_JOIN AS I
+JOIN NETFLIX AS N
+ON I.PRIMARYTITLE = N.TITLE
+AND I.STARTYEAR = N.RELEASE_YEAR
+AND I.TITLETYPE_NEW = N.TYPE
+        
+;   
+SELECT * FROM NETFLIX_IMDB;
+ 
+--4. Kolik je ve výsledku duplicit? (GROUP BY & HAVING). (Duplicity posuzujte tak, ze se neopakuje SHOW_ID (id Netflix datasetu)).
+
+--Výsledný dataset bude mít jen kolem 500 řádků. Zde screenshot, jak vypadá moje řešení.
+
+SELECT PRIMARYTITLE
+FROM NETFLIX_IMDB
+GROUP BY PRIMARYTITLE;
+
+
+SELECT DISTINCT(SHOW_ID)
+FROM NETFLIX_IMDB;
+-----------------------------
+
+--Máte k dispozici dva nové datasety: NETFLIX_TITLES a IMDB_TITLES (jsou uložené ve schématu SCH_CZECHITA v našem Snowflake workspace). Jak názvy napovídají, jedná se o datasety filmů a seriálů. 
+--Dataset NETFLIX_TITLES ukazuje, jaké filmy a seriály měl Netflix k dispozici v den stažení. Dataset IMDB_TITLES ukazuje, jaké filmy a další tituly byly v databázi IMDB v den stažení 
+--(tento dataset není kompletní, aby byl menší).
+--Zodpovězte otázky v jednotlivých úkolech - odpovězte slovně a přidejte kód, kterým jste na odpověď přišly.
+--Jakmile budete mít úkoly vypracované, okopírujte váš skript do Google Docs a link na něj odevzdejte do úkolu jako hyperlink. Vkládejte jen relevantní části řešení.
+
+--Jak by to mělo vypadat? Například pokud se ptám, jaké jsou dva nejčastější roky vydání filmů na Netflixu, do závorek vám k tomu napíšu, o jaké sloupečky se jedná - v tomto případě je to RELEASE_YEAR. 
+--Někdy i jaká hodnota je třeba filtrovat - TYPE = 'Movie', případně jakou metodu máte použít - v tomto případě je to GROUP BY. Odevzdané řešení by vypadalo takto:
+
+-- SLOVNÍ ODPOVĚĎ: 2017, 2018
+-- KÓD:
+
+SELECT 
+    RELEASE_YEAR
+    , COUNT(*) AS POCET_TITULU
+FROM NETFLIX_TITLES
+WHERE TYPE = 'Movie'
+GROUP BY RELEASE_YEAR
+ORDER BY POCET_TITULU DESC;
+
+ 
+
+-- Podívejte se, jak vypadá dataset NETFLIX_TITLES
+SELECT
+    *
+FROM NETFLIX_TITLES;
+
+-- Podívejte se, jak vypadá dataset IMDB_TITLES
+SELECT
+    *
+FROM IMDB_TITLES;
+
+-- Vypracujte úkoly:
+
+-- Úkoly:
+-- 1. Jaké dominují typy titulů na IMDB (TITLETYPE)? (Použij GROUP BY.) Vyber 3 nejčastější typy titulu (Použij LIMIT).
+-- SLOVNÍ ODPOVĚĎ: movie, tvEpisode, short
+-- KÓD:
+SELECT count(titletype), titletype
+FROM IMDB_titles
+GROUP BY TITLETYPE
+ORDER BY count(titletype) DESC
+LIMIT 3
+;
+
+ 
+
+-- 2. V jakém roce bylo na Netflix přidáno (DATE_ADDED - Rok jsou poslední 4 znaky - použij funkci RIGHT().) nejvíce filmů (TYPE = 'Movie')? (Použij GROUP BY.) Zapište také, kolik filmů bylo v daném roce přidáno. 
+--(Pouze filmů ne seriálů.)
+-- SLOVNÍ ODPOVĚĎ: rok 2019, 1546 filmu 
+-- KÓD:
+SELECT RIGHT(DATE_ADDED, 4) AS rok_pridani
+, COUNT(date_added) AS pocet
+FROM netflix_titles
+WHERE type = 'Movie'
+GROUP BY rok_pridani
+ORDER BY pocet DESC
+;
+
+ 
+
+-- 3. Kolik zemí (COUNTRY) má na Netflixu alespoň 100 seriálů (TYPE = 'TV Show')? (Ber v potaz pouze první uvedenou zemi - použij funkci SPLIT_PART()). Země musí být vyplněna (COUNTRY <> ''). 
+--Ve výsledku zobraz jen ty země, které vyhovují zadání (použij HAVING).
+-- SLOVNÍ ODPOVĚĎ:United States, United Kingdom, South Korea, Japan
+-- KÓD:
+SELECT 
+ SPLIT(country, ',') AS country_array
+ , COUNT(country_array) AS pocet_serialu
+
+FROM netflix_titles
+WHERE type = 'TV Show' AND COUNTRY <> ''
+GROUP BY country_array
+HAVING pocet_serialu > 100
+;
+
+
+
