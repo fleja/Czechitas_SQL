@@ -1,0 +1,332 @@
+-- VYPISOVANI SLOUPECKU - carky
+------------------------------------
+
+SELECT eventid, iyear
+FROM teror;
+
+-- CASE WHEN vs IFF()
+------------------------------------
+-- nepovinna syntaxe ve hranatych zavorkach
+-- jedna podminka - IFF() 
+    --> prozkoumejte dokumentaci (popisek nahore; syntax - <> expr, value, result, condition, [],  ..; arguments popis; usage notes --> null hodnoty, .. ; examples - reproducible -
+    --nekdy je potreba vytvorit tabulku s daty)
+-- Q: Oprava null hodnot u nkill pro hodnoty nkillter: WHERE IFNULL(NKILL,0) < NKILLTER, NKILLTER muze byt taky null
+
+SELECT IFF(nkill IS NULL, nkillter, nkill) AS nkill_new, nkill, nkillter,  *
+FROM teror
+WHERE IFNULL(nkill,0) < IFNULL (nkillter,0);
+
+-- vice podminek - CASE WHEN
+-- Q: pouziti vice sloupcu: novy sloupec attacks_category - kategorizace utoku na 
+--'1. attacks with casualties', 
+--'2. attacks with non-fatal victims', 
+--'3. attacks with no victims' 
+--nkill, nkillter, nwound, nhostkid
+
+SELECT 
+CASE
+    WHEN nkill > 0  OR nkillter > 0 THEN '1. attacks with casualties'
+    WHEN nwound > 0 OR nhostkid > 0 THEN '2. attacks with non-fatal victims'
+    ELSE '3. attacks with no victims'
+END AS attacks_cat
+, nkill
+, nkillter
+, nwound
+, nhostkid
+, *
+FROM teror;
+
+-- Q: case when a group by --> predchozi priklad rovnou zgroupovat - spocitat pocet utoku, pocet zabitych, zranenych a unesenych
+
+SELECT 
+CASE
+    WHEN nkill > 0  OR nkillter > 0 THEN '1. attacks with casualties'
+    WHEN nwound > 0 OR nhostkid > 0 THEN '2. attacks with non-fatal victims'
+    ELSE '3. attacks with no victims'
+END AS attacks_cat
+, COUNT(*)
+, COUNT(DISTINCT eventid)
+, SUM(IFF(nkill IS null, nkillter, nwound)) AS total_kills
+, SUM(nkillter) AS SUM_nkillter
+, SUM(nwound) AS SUM_nwound
+, SUM(nhostkid) AS SUM_nhostkid
+FROM teror
+GROUP BY attacks_cat;
+
+SELECT
+    CASE
+        WHEN NKILL > 0 OR NKILLTER > 0 THEN '1. attacks with casualties'
+        WHEN NWOUND > 0 OR NHOSTKID > 0 THEN '2. attacks with non-fatal victims'
+        WHEN IFNULL(NKILL,0) = 0 AND IFNULL(NKILLTER,0) = 0 AND IFNULL(NWOUND,0) = 0 AND IFNULL(NHOSTKID,0) = 0 THEN '3. attacks with no victims'
+        WHEN NHOSTKID = -99 THEN '4. unknown'
+        ELSE 'N/A'
+    END AS ATTACKS_CAT
+    , NKILL
+    , NKILLTER
+    , NWOUND
+    , NHOSTKID
+    , *
+FROM TEROR
+WHERE ATTACKS_CAT = 'N/A';
+
+-- Q: pridat do skupiny typ utoku (attacktype1) = chci videt pocty v kategoriich pro jednotlive typy utoku
+
+
+
+-- ukoly ze sobotni lekce na case when? 
+-- ukoly ze sobotni lekce na group by? 
+------------------------------------------------------------------------------------------------------------------
+-- UKOLY Z LEKCE 2 (SELEKTUJU.CZ)
+------------------------------------------------------------------------------------------------------------------
+// J // Vypiš všechny útoky z roku 2014, ke kterým se přihlásil Islámský stát ('Islamic State of Iraq and the Levant (ISIL)').
+/*
+Vypiš sloupečky IYEAR, IMONTH, IDAY, GNAME, COUNTRY_TXT, REGION_TXT, PROVSTATE, CITY, NKILL, NKILLTER, NWOUND 
+a na konec přidej sloupeček EventImpact, který bude obsahovat:
+'Massacre' pro útoky s víc než 1000 obětí
+'Bloodbath' pro útoky s 501 - 1000 obětmi
+'Carnage' pro ůtoky s 251 - 500 obětmi
+'Blodshed' pro útoky se 101 - 250 obětmi (chyba v zadani)
+'Slaugter' pro útoky s 1 - 100 obětmi
+a ‘N/A’ pro všechny ostatní útoky.
+*/
+-- osekavani / between
+                        
+// K // Vypiš všechny útoky s alespoň jednou obětí z Německa, Rakouska, Švýcarska, Francie a Itálie. 
+-- U Německa, Rakouska, Švýcarska nahraď region_txt za ‘DACH’ u zbytku nech původní region. 
+-- Vypiš sloupečky IYEAR, IMONTH, IDAY, COUNTRY_TXT, REGION_TXT, PROVSTATE, CITY, NKILL, NKILLTER, NWOUND. Výstup seřaď podle počtu raněných sestupně
+                          
+                        
+// L // Vypiš COUNTRY_TXT, CITY, NWOUND a 
+//přidej sloupeček vzdalenost_od_albertova obsahující vzdálenost místa útoku z pražské části Albertov v km (50.0688111, 14.4243694)
+//a sloupeček kategorie obsahující ‘Blízko’ pro útoky bližší 2000 km a ‘Daleko’ pro ostatní. 
+//Vypiš jen útoky s víc než stovkou raněných a seřad je podle vzdálenosti od Albertova
+                          
+-- albertov: (50.0688111, 14.4243694)
+ 
+------------------------------------------------------------------------------------------------------------------
+-- UKOLY Z LEKCE 3 (SELEKTUJU.CZ)
+------------------------------------------------------------------------------------------------------------------
+// A // Zjisti počet obětí a raněných po letech a měsících
+// B // Zjisti počet obětí a raněných v západní Evropě po letech a měsících
+// C // Zjisti počet útoků po zemích. Seřaď je podle počtu útoků sestupně
+// D // Zjisti počet útoků po zemích a letech, seřaď je podle počtu útoků sestupně
+// E // Kolik která organizace spáchala útoků zápalnými zbraněmi (weaptype1_txt = 'Incendiary'), kolik při nich celkem zabila obětí, kolik zemřelo teroristů a kolik lidí bylo zraněno (nkill, nkillter, nwound)
+// F // Stejné jako E, jen ve výsledném výpisu chceme jen organizace, které zápalnými útoky zranily 50 a více lidí a nechceme tam vidět “organizaci” Unknown
+
+SELECT 
+gname
+, SUM(nkill)
+FROM teror
+WHERE weaptype1_txt = 'Incendiary' 
+GROUP BY gname
+HAVING SUM(nwound) >= 50;
+
+
+// G // Vypište celkový počet útoků podle druhu zbraně weaptype1_txt, počet mrtvých, mrtvých teroristů, průměrný počet mrtvých, průměrný počet mrtvých teroristů, kolik mrtvých obětí připadá na jednoho 
+--mrtvého teroristu a kolik zraněných...
+-------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------
+-- LEKCE 4: JOINY
+------------------------------------------------------------------------------------------------------------------
+-- Normalizovana vs denormalizovana tabulka? TEROR? podle ceho to poznam?
+--normalizovana tabulka - 
+-- Nove tabulky: TEROR2, COUNTRY, ATTACKTYPE, WEAPTYPE
+-- Typy vztahu mezi tabulkami? 1:1, 1.n,. m:n
+-- Typy joinu?
+SELECT * FROM JOIN_EXAMPLE_T1;
+SELECT * FROM JOIN_EXAMPLE_T2;
+-- UKOLY ----------------------------------------------------------
+--> 1. napojte tabulky JOIN_EXAMPLE_T1 a JOIN_EXAMPLE_T2 pres vsechny typy joinu, co jsme si ukazaly
+------------------------------------------------------------------
+-- zpet k teror datum
+---------------------------------------------------------                        
+-- Základní JOIN (podle numeric)
+---------------------------------------------------------
+-- Q: napojeni ciselniku country na tabulku teror2 - vsechny sloupce (bez aliasu) - JAKY TYP JOINU SE HODI PRO TENTO CISELNIK?
+
+SELECT *
+FROM teror2
+LEFT JOIN COUNTRY
+ON TEROR2.COUNTRY = COUNTRY.ID;
+
+
+-- Q: napojeni ciselniku country na tabulku teror2 - vse z jedne tabulky, pouze vybrane sloupce z druhe tabulky (s aliasy tabulek, AS)
+
+SELECT iyear, country, zeme.id
+FROM country AS zeme
+LEFT JOIN teror2 AS t2
+ON zeme.ID = t2.country;
+
+
+-- Q: napojeni ciselniku country na tabulku teror2 - pouze vybrane sloupce z obou tabulek (s aliasy tabulek, AS)
+
+SELECT nkill, nwound, iyear, country
+FROM teror2
+RIGHT JOIN frgt4;
+
+
+-- Q: napojeni ciselniku country na tabulku teror2 - pouze vybrane sloupce z obou tabulek (s aliasy tabulek, bez AS)
+
+
+
+-- Q: kdyz data nejsou spravne - napojeni ciselniku country_dirtydata na tabulku teror2
+
+
+
+-- Q: jak overim unikatnosti dat v tabulce country_dirtydata?
+
+SELECT COUNT(DISTINCT ID), COUNT(*) FROM COUNTRY_DIRTYDATA;
+
+SELECT ID
+, COUNT(*)
+FROM COUNTRY_DIRTYDATA
+GROUP BY ID
+HAVING COUNT(*) > 1;
+---------------------------------------------------------                        
+-- Základní JOIN (jde to i pres stringy)
+---------------------------------------------------------                        
+-- Q: napojeni naopak - pres text: napojeni ciselniku country na tabulku teror pomoci nazvu zeme
+
+SELECT
+DISTINCT
+T.Country_TXT
+, c.id
+FROM teror AS T
+LEFT JOIN COUNTRY AS C
+ON T.country_txt = c.name;
+
+-- Q: pouziti funkci v on clause - opet napojeni ciselniku country na tabulku teror pomoci nazvu zeme, ale s pouzitim funkce lower() pro nazvy statu
+---------------------------------------------------------                        
+-- Základní JOIN (vice tabulek)
+---------------------------------------------------------
+-- Q: napojeni ciselniku attacktype na tabulku teror2 - 3x pro kazdy sloupecek utoku (attacktype1, attacktype2, attacktype3)
+-- UKOLY ----------------------------------------------------------
+-- 1. napiste join, ktery napoji ciselnik weaptype na sloupce weaptype1, weaptype2 a weaptype3 (stejne jako attacktype v predchozim prikladu - LEFT JOIN), vypiste nejdrive sloupecky s nazvy zbrani z ciselniku, 
+--z teroru vsechny sloupecky
+
+SELECT 
+t.attacktype1
+, t.attacktype2
+, t.attacktype3
+, at1.name AS attacktype_1_name
+, at2.name AS attacktype_2_name
+, at2.name AS attacktype_3_name
+FROM teror2 AS T
+LEFT JOIN attacktype AS AT1
+ON t.attacktype1 = AT1.ID
+LEFT JOIN attacktype as AT2
+ON t.attacktype2 = at2.ID
+LEFT JOIN attacktype AS at3
+ON t.attacktype3 = at3.ID
+WHERE t.attacktype3 IS NOT null;
+
+
+--- 2. Vyberte pouze utoky, kde byly pouzity tri ruzne typy zbrani
+--- 2-A. POMOCI INNER JOIN
+
+SELECT 
+t.attacktype1
+, t.attacktype2
+, t.attacktype3
+, at1.name AS attacktype_1_name
+, at2.name AS attacktype_2_name
+, at2.name AS attacktype_3_name
+FROM teror2 AS T
+INNER JOIN attacktype AS AT1
+ON t.attacktype1 = AT1.ID
+INNER JOIN attacktype as AT2
+ON t.attacktype2 = at2.ID
+INNER JOIN attacktype AS at3
+ON t.attacktype3 = at3.ID;
+
+
+
+--- 2-B. POMOCI LEFT JOIN & WHERE
+
+SELECT 
+t.attacktype1
+, t.attacktype2
+, t.attacktype3
+, at1.name AS attacktype_1_name
+, at2.name AS attacktype_2_name
+, at2.name AS attacktype_3_name
+FROM teror2 AS T
+LEFT JOIN attacktype AS AT1
+ON t.attacktype1 = AT1.ID
+LEFT JOIN attacktype as AT2
+ON t.attacktype2 = at2.ID
+LEFT JOIN attacktype AS at3
+ON t.attacktype3 = at3.ID
+WHERE t.attacktype3 IS NOT null;
+
+------------------------------------------------------------------
+---------------------------------------------------------                        
+-- JOIN a WHERE - dalsi priklad
+---------------------------------------------------------                        
+-- Q: opet napojime ciselnik country na tabulku teror2, dale ciselnik attacktype pro sloupecek attacktype1, filtrujeme pouze zemi 'Czech Republic', 
+--roky 2015-2016 a attacktype1 'Facility/Infrastructure Attack'
+
+SELECT 
+t.attacktype1
+, t.attacktype2
+, t.attacktype3
+, at1.name AS attacktype_1_name
+, at2.name AS attacktype_2_name
+, at2.name AS attacktype_3_name
+, t.iyear
+FROM teror2 AS T
+LEFT JOIN attacktype AS AT1
+ON t.attacktype1 = AT1.ID
+LEFT JOIN attacktype as AT2
+ON t.attacktype2 = at2.ID
+LEFT JOIN attacktype AS at3
+ON t.attacktype3 = at3.ID
+WHERE t.country = '54' AND
+ t.attacktype1 LIKE '%Facility%'
+    t.iyear BETWEEN 2015 AND 2016 AND;
+
+
+---------------------------------------------------------                        
+-- JOIN a GROUP BY
+---------------------------------------------------------
+-- Q: chceme zjistit, pro jake typy zbrani (weaptype1) bylo provedeno vice nez 1000 utoku
+
+
+
+------------------------------------------------------------------------------------------------------------------
+-- UKOLY Z LEKCE 4 (SELEKTUJU.CZ)
+------------------------------------------------------------------------------------------------------------------
+//A / Vypiš eventdate, gname, nkill, nwound z tabulky teror2 (!) a přes sloupeček country připoj zemi z tabulky country
+
+
+SELECT t2.eventdate
+, t2.gname
+, t2.nkill
+, t2.nwound
+, c.name as country_name
+ FROM teror2 AS t2
+ LEFT JOIN country AS c 
+ ON t2.country = c.id;
+
+                        
+//B / Vypiš eventdate, gname, nkill, nwound z tabulky teror2 (!) a
+//přes sloupecek country pripoj zemi z tabulky country
+//přes sloupecek weaptype1 připoj nazev zbrane z tabulky weaptype
+//přes sloupecek weaptype2 připoj nazev zbrane z tabulky weaptype
+//C / Vypis eventdate, gname, nkill, nwound z tabulky teror2 (!) a
+//pres sloupecek country připoj zemi z tabulky country
+//pres sloupecek weaptype1 připoj nazev zbrane z tabulky weaptype
+//pres sloupecek weaptype2 připoj nazev zbrane z tabulky weaptype
+//vypis jen utoky jejichz sekundarni zbran byla zapalna ('Incendiary')
+                          
+                        
+//D / Z tabulky teror2 vypis pocet utoku, pocty mrtvych a ranenych v roce 2016 -- podle pouzitych zbrani (WEAPTYPE1)
+                        
+//E / Vypiste pocet unesenych lidi (kdy byl typ utoku unos rukojmich) a pocet udalosti podle regionu a roku. Vysledek seradte podle poctu unesenych lidi sestupne. Sloupecky pojmenujte region, rok, 
+--pocet_unesenych, pocet_udalosti
+                        
+//F / Zjistí počty útoků z tabulky teror2 po letech a kontinentech. Tj. napoj sloupecek region z tabulky teror2 na tabulku region a vytvoř sloupeček kontinent z nazvu regionu a podle něj a podle roku 
+--tabulku "zgrupuj" (zagreguj).
+
+
+
